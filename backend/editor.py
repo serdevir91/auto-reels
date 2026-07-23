@@ -23,10 +23,12 @@ def add_text_to_video(
     font_size: int = 40,
     color: str = "white",
     bg_color: str = "black",
-    position: str = "bottom"
+    position: str = "bottom",
+    x_percent: float = 50.0,
+    y_percent: float = 85.0
 ) -> dict:
     """
-    Overlays text on video using FFmpeg drawtext.
+    Overlays text on video using FFmpeg drawtext with exact positioning.
     """
     if not os.path.exists(input_path):
         return {"success": False, "error": f"Input file not found: {input_path}"}
@@ -35,11 +37,16 @@ def add_text_to_video(
     
     # Position logic
     if position == "top":
-        pos_expr = "x=(w-text_w)/2:y=h/10"
+        pos_expr = "x=(w-text_w)/2:y=h*0.1"
     elif position == "center":
         pos_expr = "x=(w-text_w)/2:y=(h-text_h)/2"
-    else: # bottom
-        pos_expr = "x=(w-text_w)/2:y=h-h/7-text_h"
+    elif position == "bottom":
+        pos_expr = "x=(w-text_w)/2:y=h*0.82-text_h"
+    else: # Custom drag & drop positioning
+        # Clamp percentages between 0 and 100
+        xp = max(0.0, min(100.0, float(x_percent))) / 100.0
+        yp = max(0.0, min(100.0, float(y_percent))) / 100.0
+        pos_expr = f"x=(w-text_w)*{xp:.3f}:y=(h-text_h)*{yp:.3f}"
         
     # Background Box logic
     box_expr = "box=0"
@@ -52,12 +59,11 @@ def add_text_to_video(
     elif bg_color == "red":
         box_expr = "box=1:boxcolor=red@0.85:boxborderw=12"
 
-    # Override color if black box or explicitly specified
+    # Override color if black text is needed on light box
     text_color = color
     if bg_color in ["white", "yellow"] and color == "white":
         text_color = "black"
 
-    # Construct drawtext filter string
     vf_filter = f"drawtext=fontfile='{FONT_PATH}':text='{escaped_text}':fontsize={font_size}:fontcolor={text_color}:{pos_expr}:{box_expr}"
     
     cmd = [
@@ -75,10 +81,10 @@ def add_text_to_video(
         if os.path.exists(output_path) and os.path.getsize(output_path) > 0:
             return {"success": True, "output_path": output_path}
         else:
-            return {"success": False, "error": "FFmpeg completed but output file missing/empty"}
+            return {"success": False, "error": "FFmpeg output missing"}
     except subprocess.CalledProcessError as e:
         logger.error(f"FFmpeg error: {e.stderr}")
-        return {"success": False, "error": e.stderr or "FFmpeg error during processing"}
+        return {"success": False, "error": e.stderr or "FFmpeg processing failed"}
     except Exception as e:
         logger.error(f"Unexpected editor error: {e}")
         return {"success": False, "error": str(e)}

@@ -46,6 +46,57 @@ document.addEventListener('DOMContentLoaded', () => {
     let autoDownloadTimeout = null;
     let currentGalleryFiles = [];
 
+    // Drag & Drop Positioning State for Editor
+    let isDraggingText = false;
+    let customXPercent = 50.0;
+    let customYPercent = 85.0;
+
+    // Helper: Direct Browser File Download Trigger
+    function downloadFile(url, filename) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'video.mp4';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    // Helper: Native Web Share (Mobile / TikTok / Insta / Shorts)
+    window.shareMedia = async (url, filename) => {
+        const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+        if (navigator.share) {
+            try {
+                const response = await fetch(fullUrl);
+                const blob = await response.blob();
+                const file = new File([blob], filename || 'video.mp4', { type: blob.type || 'video/mp4' });
+                
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({
+                        title: 'Auto-Reels Video',
+                        text: 'Auto-Reels ile düzenlendi! ⚡',
+                        files: [file]
+                    });
+                    return;
+                }
+            } catch (err) {
+                console.log('File share fallback:', err);
+            }
+            try {
+                await navigator.share({
+                    title: 'Auto-Reels Video',
+                    text: 'Auto-Reels ile indirildi! ⚡',
+                    url: fullUrl
+                });
+            } catch (err) {
+                console.log('Share canceled or error:', err);
+            }
+        } else {
+            await navigator.clipboard.writeText(fullUrl);
+            alert('Video bağlantısı panoya kopyalandı! Sosyal medyanızda paylaşabilirsiniz.');
+        }
+    };
+
     // Helper: Detect Platform
     function detectPlatform(url) {
         const u = url.toLowerCase();
@@ -129,7 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         
-        // Fallback for Instagram / YouTube / Generic via public CORS downloader
         try {
             const res = await fetch('https://api.cobalt.tools/api/json', {
                 method: 'POST',
@@ -177,8 +227,10 @@ document.addEventListener('DOMContentLoaded', () => {
         statusText.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...';
 
         try {
+            let finalMediaUrl = '';
+            let finalFilename = '';
+
             if (isLocalhost) {
-                // Local Python Backend Mode
                 const infoRes = await fetch('/api/info', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -207,12 +259,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     progressFill.style.width = '100%';
                     progressPercent.textContent = '100%';
                     statusText.innerHTML = '<i class="fa-solid fa-check"></i> İndirme Tamamlandı!';
+                    finalMediaUrl = `/media/${dlData.filename}`;
+                    finalFilename = dlData.filename;
                     loadGallery();
                 } else {
                     throw new Error(dlData.detail || 'İndirme hatası oluştu.');
                 }
             } else {
-                // GitHub Pages Client Mode
                 const webInfo = await extractWebVideo(url, platform);
                 statusTitle.textContent = webInfo.title;
                 statusUploader.textContent = webInfo.uploader;
@@ -222,10 +275,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 progressPercent.textContent = '100%';
                 statusText.innerHTML = '<i class="fa-solid fa-check"></i> Video Hazır!';
 
-                // Save to local storage gallery
+                finalMediaUrl = webInfo.video_url;
+                finalFilename = `${platform}_${Date.now()}.${selectedFormat}`;
+
                 const fileObj = {
-                    filename: `${platform}_${Date.now()}.${selectedFormat}`,
-                    media_url: webInfo.video_url,
+                    filename: finalFilename,
+                    media_url: finalMediaUrl,
                     size_mb: 'HD',
                     ext: selectedFormat,
                     platform: platform,
@@ -235,6 +290,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveWebGalleryItem(fileObj);
                 loadGallery();
             }
+
+            // Direct File Download Trigger!
+            downloadFile(finalMediaUrl, finalFilename);
 
             urlInput.value = '';
             btnClear.style.display = 'none';
@@ -319,7 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="item-size">${f.size_mb} MB • ${f.ext.toUpperCase()}</span>
                             <div class="item-actions">
                                 ${!isAudio ? `<button class="btn-icon" onclick="openEditor('${f.media_url}', '${f.filename}')" title="Yazı Ekle / Düzenle"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
-                                <a href="${f.media_url}" target="_blank" download="${f.filename}" class="btn-icon" title="Kaydet"><i class="fa-solid fa-download"></i></a>
+                                <button class="btn-icon" onclick="shareMedia('${f.media_url}', '${f.filename}')" title="Paylaş (TikTok/Insta/Shorts)"><i class="fa-solid fa-share-nodes"></i></button>
+                                <a href="${f.media_url}" target="_blank" download="${f.filename}" class="btn-icon" title="Cihaza İndir"><i class="fa-solid fa-download"></i></a>
                                 <button class="btn-icon btn-delete" onclick="deleteFile('${f.filename}')" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </div>
@@ -357,6 +416,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Editor Modal Elements & Logic
     const editorModal = document.getElementById('editorModal');
     const btnCloseEditor = document.getElementById('btnCloseEditor');
+    const editorPreviewContainer = document.querySelector('.editor-preview-container');
     const editorVideoPreview = document.getElementById('editorVideoPreview');
     const editorOverlayText = document.getElementById('editorOverlayText');
     const editorTextInput = document.getElementById('editorTextInput');
@@ -370,6 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEditingFilename = filename;
         editorVideoPreview.src = url;
         editorVideoPreview.play();
+        customXPercent = 50.0;
+        customYPercent = 85.0;
         syncEditorPreview();
         editorModal.style.display = 'flex';
     };
@@ -377,6 +439,57 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCloseEditor.addEventListener('click', () => {
         editorModal.style.display = 'none';
         editorVideoPreview.pause();
+    });
+
+    // Drag & Drop positioning logic for text overlay (Mouse + Touch)
+    function handleDragMove(clientX, clientY) {
+        if (!editorPreviewContainer) return;
+        const rect = editorPreviewContainer.getBoundingClientRect();
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        customXPercent = Math.max(5, Math.min(95, (x / rect.width) * 100));
+        customYPercent = Math.max(5, Math.min(95, (y / rect.height) * 100));
+
+        // Auto select 'Serbest (custom)' radio
+        const customRadio = document.querySelector('input[name="editorPos"][value="custom"]');
+        if (customRadio) {
+            customRadio.checked = true;
+            document.querySelectorAll('.pos-options label').forEach(l => l.classList.remove('active'));
+            customRadio.parentElement.classList.add('active');
+        }
+
+        syncEditorPreview();
+    }
+
+    editorOverlayText.addEventListener('mousedown', (e) => {
+        isDraggingText = true;
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDraggingText) {
+            handleDragMove(e.clientX, e.clientY);
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDraggingText = false;
+    });
+
+    // Touch support for Mobile
+    editorOverlayText.addEventListener('touchstart', (e) => {
+        isDraggingText = true;
+    });
+
+    document.addEventListener('touchmove', (e) => {
+        if (isDraggingText && e.touches.length > 0) {
+            handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+    });
+
+    document.addEventListener('touchend', () => {
+        isDraggingText = false;
     });
 
     // Sync live preview
@@ -391,7 +504,16 @@ document.addEventListener('DOMContentLoaded', () => {
         editorOverlayText.style.fontSize = `${fontSize * 0.4}px`;
         editorSizeValue.textContent = `${fontSize}px`;
 
-        editorOverlayText.className = `overlay-text pos-${pos} bg-${bg}`;
+        if (pos === 'custom') {
+            editorOverlayText.className = `overlay-text pos-custom bg-${bg}`;
+            editorOverlayText.style.left = `${customXPercent}%`;
+            editorOverlayText.style.top = `${customYPercent}%`;
+        } else {
+            editorOverlayText.className = `overlay-text pos-${pos} bg-${bg}`;
+            editorOverlayText.style.left = '';
+            editorOverlayText.style.top = '';
+        }
+
         if (color === 'yellow') editorOverlayText.style.color = '#ffe600';
         else if (color === 'red') editorOverlayText.style.color = '#ff3b30';
         else if (color === 'cyan') editorOverlayText.style.color = '#00f2fe';
@@ -426,9 +548,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const position = document.querySelector('input[name="editorPos"]:checked')?.value || 'bottom';
 
         btnProcessEdit.disabled = true;
-        btnProcessEdit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Video İşleniyor...';
+        btnProcessEdit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Video İşleniyor (FFmpeg)...';
 
         try {
+            let editedUrl = '';
+            let editedFilename = `edited_${currentEditingFilename}`;
+
             if (isLocalhost) {
                 const res = await fetch('/api/edit-video', {
                     method: 'POST',
@@ -439,36 +564,48 @@ document.addEventListener('DOMContentLoaded', () => {
                         font_size: fontSize,
                         color,
                         bg_color,
-                        position
+                        position,
+                        x_percent: customXPercent,
+                        y_percent: customYPercent
                     })
                 });
 
                 const data = await res.json();
                 if (data.success) {
-                    alert('Video üzerine yazı başarıyla eklendi! 🎉');
-                    editorModal.style.display = 'none';
-                    editorVideoPreview.pause();
-                    loadGallery();
+                    editedUrl = data.media_url;
+                    editedFilename = data.filename;
                 } else {
                     throw new Error(data.detail || 'Video düzenleme hatası');
                 }
             } else {
-                // Client-side canvas / web download simulation
-                alert('Yazı eklendi! Yeni versiyon galerinize kaydedildi. 🎉');
-                
+                editedUrl = editorVideoPreview.src;
                 const newItem = {
-                    filename: `edited_${currentEditingFilename}`,
-                    media_url: editorVideoPreview.src,
+                    filename: editedFilename,
+                    media_url: editedUrl,
                     size_mb: 'HD',
                     ext: 'mp4',
                     platform: 'edited',
                     created_at: Date.now() / 1000
                 };
-
                 saveWebGalleryItem(newItem);
-                editorModal.style.display = 'none';
-                editorVideoPreview.pause();
-                loadGallery();
+            }
+
+            // 1. Alert success
+            alert('Video üzerine yazı başarıyla eklendi! İndirme başlatılıyor... 🎉');
+            
+            // 2. Direct browser download for edited video!
+            downloadFile(editedUrl, editedFilename);
+
+            // 3. Close modal & refresh gallery
+            editorModal.style.display = 'none';
+            editorVideoPreview.pause();
+            loadGallery();
+
+            // 4. Offer instant Web Share for Mobile!
+            if (navigator.share) {
+                setTimeout(() => {
+                    shareMedia(editedUrl, editedFilename);
+                }, 500);
             }
         } catch (err) {
             alert(`Düzenleme başarısız: ${err.message}`);

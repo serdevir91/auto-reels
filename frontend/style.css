@@ -690,15 +690,21 @@ body {
     border-radius: 6px;
     font-weight: 700;
     text-align: center;
-    pointer-events: none;
+    pointer-events: auto;
+    cursor: move;
+    user-select: none;
+    touch-action: none;
     max-width: 85%;
     word-break: break-word;
-    transition: all 0.2s ease;
+    border: 1px dashed rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    transition: background 0.2s, color 0.2s;
 }
 
 .overlay-text.pos-top { top: 12%; left: 50%; transform: translateX(-50%); }
 .overlay-text.pos-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
 .overlay-text.pos-bottom { bottom: 12%; left: 50%; transform: translateX(-50%); }
+.overlay-text.pos-custom { transform: translate(-50%, -50%); }
 
 .overlay-text.bg-black { background: rgba(0, 0, 0, 0.7); color: #fff; }
 .overlay-text.bg-yellow { background: #ffe600; color: #000; }

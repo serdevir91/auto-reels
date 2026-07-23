@@ -49,6 +49,8 @@ class EditRequest(BaseModel):
     color: Optional[str] = "white"
     bg_color: Optional[str] = "black"
     position: Optional[str] = "bottom"
+    x_percent: Optional[float] = 50.0
+    y_percent: Optional[float] = 85.0
 
 
 @app.post("/api/info")
@@ -137,7 +139,9 @@ def api_edit_video(req: EditRequest):
         font_size=req.font_size or 40,
         color=req.color or "white",
         bg_color=req.bg_color or "black",
-        position=req.position or "bottom"
+        position=req.position or "bottom",
+        x_percent=req.x_percent if req.x_percent is not None else 50.0,
+        y_percent=req.y_percent if req.y_percent is not None else 85.0
     )
     
     if not res.get("success"):
