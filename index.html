@@ -3,223 +3,212 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Reels - TikTok, Instagram & YouTube Video Downloader</title>
+    <title>Auto-Reels - Sosyal Medya Video İndirici & Düzenleyici</title>
+    <!-- FontAwesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Background Animated Blobs -->
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
-        <header class="app-header">
-            <div class="brand">
-                <div class="logo-icon">
-                    <i class="fa-solid fa-bolt"></i>
-                </div>
-                <div class="brand-text">
-                    <h1>Auto-Reels</h1>
-                    <span>Sosyal Medya Video İndirici & Düzenleyici</span>
-                </div>
+        <header>
+            <div class="logo-container">
+                <i class="fa-solid fa-bolt logo-icon"></i>
+                <h1 class="logo-text">Auto-Reels</h1>
             </div>
-            <div class="header-actions">
-                <span id="envBadge" class="env-badge"><i class="fa-solid fa-cloud"></i> Web Mode</span>
-                <button id="btnOpenFolder" class="btn btn-secondary">
-                    <i class="fa-regular fa-folder-open"></i> Klasörü Aç
-                </button>
+            <div class="header-badges">
+                <span id="envBadge" class="badge"><i class="fa-solid fa-server"></i> Local App</span>
+                <button id="btnOpenFolder" class="btn-folder" title="İndirilenler Klasörünü Aç"><i class="fa-solid fa-folder-open"></i> Klasörü Aç</button>
             </div>
+            <p class="subtitle">TikTok (Filigransız), Instagram Reels ve YouTube Shorts videolarını ışık hızında indirin ve düzenleyin.</p>
         </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Downloader Card -->
-            <section class="card input-card">
-                <div class="card-header">
-                    <h2><i class="fa-solid fa-link"></i> Video Linkini Yapıştırın</h2>
-                    <div class="options-group">
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="autoDownloadToggle">
-                            <span class="slider"></span>
-                            <span class="label-text"><i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik İndir</span>
-                        </label>
+        <!-- Main Downloader Card -->
+        <main class="downloader-card">
+            <div class="card-header">
+                <h2><i class="fa-solid fa-link"></i> Video Linkini Yapıştırın</h2>
+                <label class="toggle-option">
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="autoDownloadToggle">
+                        <span class="slider"></span>
+                    </div>
+                    <span><i class="fa-solid fa-wand-magic-sparkles"></i> Otomatik İndir</span>
+                </label>
+            </div>
+
+            <!-- Input Box & Buttons -->
+            <div class="input-section">
+                <div class="input-wrapper">
+                    <i class="fa-solid fa-globe link-icon"></i>
+                    <input type="text" id="urlInput" placeholder="TikTok, Instagram Reels veya YouTube Shorts linki girin..." autocomplete="off">
+                    <button id="btnClear" class="btn-clear-input" title="Temizle" style="display: none;"><i class="fa-solid fa-xmark"></i></button>
+                    <div id="platformBadge" class="platform-badge generic">
+                        <i class="fa-solid fa-globe"></i> Standart
                     </div>
                 </div>
 
-                <div class="input-area">
-                    <div class="input-wrapper">
-                        <i class="fa-solid fa-globe input-icon"></i>
-                        <input type="text" id="urlInput" placeholder="TikTok, Instagram Reels veya YouTube Shorts linki girin..." autocomplete="off">
-                        <button id="btnClear" class="btn-icon" style="display:none;" title="Temizle"><i class="fa-solid fa-xmark"></i></button>
-                        <div id="platformBadge" class="platform-badge generic">
-                            <i class="fa-solid fa-link"></i> Standart
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Settings & Action Buttons -->
-                <div class="action-bar">
+                <div class="options-bar">
                     <div class="format-selector">
-                        <label class="radio-label active">
+                        <label class="format-label active">
                             <input type="radio" name="format" value="mp4" checked>
                             <i class="fa-solid fa-video"></i> MP4 Video (HD)
                         </label>
-                        <label class="radio-label">
+                        <label class="format-label">
                             <input type="radio" name="format" value="mp3">
                             <i class="fa-solid fa-music"></i> MP3 Ses
                         </label>
                     </div>
 
-                    <div class="buttons">
-                        <button id="btnPaste" class="btn btn-outline">
+                    <div class="button-group">
+                        <button id="btnPaste" class="btn-secondary">
                             <i class="fa-regular fa-paste"></i> Panodan Yapıştır
                         </button>
-                        <button id="btnDownload" class="btn btn-primary">
+                        <button id="btnDownload" class="btn-primary">
                             <i class="fa-solid fa-download"></i> Videoyu İndir
                         </button>
                     </div>
                 </div>
+            </div>
 
-                <div class="platform-chips">
-                    <span class="chip chip-tiktok"><i class="fa-brands fa-tiktok"></i> TikTok (Filigransız)</span>
-                    <span class="chip chip-instagram"><i class="fa-brands fa-instagram"></i> Instagram Reels</span>
-                    <span class="chip chip-youtube"><i class="fa-brands fa-youtube"></i> YouTube Shorts</span>
-                </div>
-            </section>
-
-            <!-- Download Status Card -->
-            <section id="statusCard" class="card status-card" style="display: none;">
-                <div class="status-content">
-                    <div class="preview-thumb">
-                        <img id="statusThumb" src="" alt="Thumbnail Preview">
-                        <div id="statusPlatformBadge" class="platform-badge">TikTok</div>
-                    </div>
-                    <div class="status-details">
-                        <h3 id="statusTitle">Video İndiriliyor...</h3>
-                        <p id="statusMeta" class="meta-text"><i class="fa-solid fa-user"></i> <span id="statusUploader">Yükleyici</span></p>
-                        
-                        <!-- Progress Bar -->
-                        <div class="progress-container">
-                            <div class="progress-info">
-                                <span id="statusText"><i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...</span>
-                                <span id="progressPercent">0%</span>
-                            </div>
-                            <div class="progress-bar">
-                                <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Media Gallery -->
-            <section class="card gallery-card">
-                <div class="card-header">
-                    <h2><i class="fa-solid fa-film"></i> İndirilen Videolar</h2>
-                    <div class="gallery-controls">
-                        <div class="search-box">
-                            <i class="fa-solid fa-search"></i>
-                            <input type="text" id="searchGallery" placeholder="Videolarda ara...">
-                        </div>
-                        <button id="btnRefreshGallery" class="btn-icon" title="Yenile"><i class="fa-solid fa-rotate-right"></i></button>
-                    </div>
-                </div>
-
-                <div id="galleryGrid" class="gallery-grid">
-                    <div class="empty-state">
-                        <i class="fa-solid fa-cloud-arrow-down"></i>
-                        <p>Henüz indirilmiş video bulunmuyor.</p>
-                        <span>Yukarıdaki alana bir TikTok, Reels veya Shorts linki yapıştırın!</span>
-                    </div>
-                </div>
-            </section>
+            <div class="supported-platforms">
+                <span class="platform-tag"><i class="fa-brands fa-tiktok"></i> TikTok (Filigransız)</span>
+                <span class="platform-tag"><i class="fa-brands fa-instagram"></i> Instagram Reels</span>
+                <span class="platform-tag"><i class="fa-brands fa-youtube"></i> YouTube Shorts</span>
+            </div>
         </main>
 
-        <!-- Player Modal -->
-        <div id="playerModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modalTitle">Video Önizleme</h3>
-                    <button id="btnCloseModal" class="btn-icon"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div class="media-container">
-                        <video id="modalVideo" controls autoplay style="display:none;"></video>
-                        <audio id="modalAudio" controls autoplay style="display:none;"></audio>
+        <!-- Status Card -->
+        <section id="statusCard" class="status-card" style="display: none;">
+            <div class="status-content">
+                <img id="statusThumb" src="" alt="Thumbnail" class="status-thumb">
+                <div class="status-info">
+                    <div class="status-header">
+                        <h3 id="statusTitle">Video İndiriliyor...</h3>
+                        <span id="statusPlatformBadge" class="platform-badge generic">TikTok</span>
+                    </div>
+                    <p id="statusUploader" class="status-uploader">Bilinmeyen Kullanıcı</p>
+                    
+                    <div class="progress-bar-wrapper">
+                        <div class="progress-info">
+                            <span id="statusText"><i class="fa-solid fa-spinner fa-spin"></i> İşleniyor...</span>
+                            <span id="progressPercent">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div id="progressFill" class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Video Editor Modal -->
-        <div id="editorModal" class="modal">
-            <div class="modal-content editor-modal-content">
-                <div class="modal-header">
-                    <h3><i class="fa-solid fa-pen-to-square"></i> Videoya Yazı Ekle & Düzenle</h3>
-                    <button id="btnCloseEditor" class="btn-icon"><i class="fa-solid fa-xmark"></i></button>
+        <!-- Gallery Section -->
+        <section class="gallery-section">
+            <div class="gallery-header">
+                <h2 class="section-title"><i class="fa-solid fa-film"></i> İndirilen Videolar</h2>
+                <div class="gallery-controls">
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="searchGallery" placeholder="Videolarda ara...">
+                    </div>
+                    <button id="btnRefreshGallery" class="btn-refresh" title="Yenile"><i class="fa-solid fa-rotate-right"></i> Yenile</button>
                 </div>
-                <div class="modal-body editor-body">
-                    <!-- Left: Live Preview -->
-                    <div class="editor-preview-container">
-                        <video id="editorVideoPreview" controls loop muted crossOrigin="anonymous"></video>
-                        <div id="editorOverlayText" class="overlay-text pos-bottom bg-black">
-                            Örnek Yazı
-                        </div>
-                    </div>
+            </div>
 
-                    <!-- Right: Controls -->
-                    <div class="editor-controls">
-                        <div class="control-group">
-                            <label><i class="fa-solid fa-font"></i> Eklenecek Metin</label>
-                            <textarea id="editorTextInput" placeholder="Videoda görünmesini istediğiniz metni yazın..." rows="3">Harika Video! 🔥</textarea>
-                        </div>
+            <div id="galleryGrid" class="gallery-grid">
+                <!-- Gallery items will be injected dynamically -->
+            </div>
+        </section>
+    </div>
 
-                        <div class="control-group">
-                            <label><i class="fa-solid fa-text-height"></i> Yazı Boyutu: <span id="editorSizeValue">40px</span></label>
-                            <input type="range" id="editorSizeInput" min="20" max="80" value="40">
-                        </div>
-
-                        <div class="control-group">
-                            <label><i class="fa-solid fa-palette"></i> Yazı Rengi</label>
-                            <div class="color-options">
-                                <label class="color-chip active" style="background:#ffffff; color:#000;"><input type="radio" name="editorColor" value="white" checked> Beyaz</label>
-                                <label class="color-chip" style="background:#ffe600; color:#000;"><input type="radio" name="editorColor" value="yellow"> Sarı</label>
-                                <label class="color-chip" style="background:#ff3b30; color:#fff;"><input type="radio" name="editorColor" value="red"> Kırmızı</label>
-                                <label class="color-chip" style="background:#00f2fe; color:#000;"><input type="radio" name="editorColor" value="cyan"> Turkuaz</label>
-                            </div>
-                        </div>
-
-                        <div class="control-group">
-                            <label><i class="fa-solid fa-square"></i> Arka Plan Kutusu</label>
-                            <div class="box-options">
-                                <label class="box-chip active"><input type="radio" name="editorBg" value="black" checked> Yarı Siyah</label>
-                                <label class="box-chip"><input type="radio" name="editorBg" value="yellow"> Sarı Kutu</label>
-                                <label class="box-chip"><input type="radio" name="editorBg" value="white"> Beyaz Kutu</label>
-                                <label class="box-chip"><input type="radio" name="editorBg" value="none"> Şeffaf</label>
-                            </div>
-                        </div>
-
-                        <div class="control-group">
-                            <label><i class="fa-solid fa-arrows-up-down-left-right"></i> Konum (Sürükle veya Seç)</label>
-                            <div class="pos-options">
-                                <label class="pos-chip"><input type="radio" name="editorPos" value="top"> Üst</label>
-                                <label class="pos-chip"><input type="radio" name="editorPos" value="center"> Orta</label>
-                                <label class="pos-chip active"><input type="radio" name="editorPos" value="bottom" checked> Alt</label>
-                                <label class="pos-chip"><input type="radio" name="editorPos" value="custom"> 🖐️ Serbest (Sürükle)</label>
-                            </div>
-                        </div>
-
-                        <button id="btnProcessEdit" class="btn btn-primary btn-block">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Videoyu Oluştur & Kaydet
-                        </button>
-                    </div>
+    <!-- Player Modal -->
+    <div id="playerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Video Önizleme</h3>
+                <button id="btnCloseModal" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="media-container">
+                    <video id="modalVideo" controls autoplay style="display: none;"></video>
+                    <audio id="modalAudio" controls autoplay style="display: none;"></audio>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Video Editor Modal -->
+    <div id="editorModal" class="modal">
+        <div class="modal-content editor-modal-content">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Video Üzerine Yazı Ekle & Düzenle</h3>
+                <button id="btnCloseEditor" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="editor-body">
+                <div class="editor-preview-container">
+                    <video id="editorVideoPreview" loop muted playsinline></video>
+                    <div id="editorOverlayText" class="overlay-text pos-bottom bg-black">Örnek Yazı</div>
+                </div>
+
+                <div class="editor-controls">
+                    <div class="control-group">
+                        <label for="editorTextInput"><i class="fa-solid fa-font"></i> Eklemek İstediğiniz Metin:</label>
+                        <textarea id="editorTextInput" rows="2" placeholder="Video üzerine yazılacak metni yazın...">Harika Video! 🔥</textarea>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="editorSizeInput"><i class="fa-solid fa-text-height"></i> Yazı Boyutu: <span id="editorSizeValue">40px</span></label>
+                        <input type="range" id="editorSizeInput" min="20" max="80" value="40">
+                    </div>
+
+                    <div class="control-group">
+                        <label><i class="fa-solid fa-palette"></i> Yazı Rengi:</label>
+                        <div class="color-options">
+                            <label class="color-chip active"><input type="radio" name="editorColor" value="white" checked> ⚪ Beyaz</label>
+                            <label class="color-chip"><input type="radio" name="editorColor" value="yellow"> 🟡 Sarı</label>
+                            <label class="color-chip"><input type="radio" name="editorColor" value="cyan"> 🔵 Mavi</label>
+                            <label class="color-chip"><input type="radio" name="editorColor" value="red"> 🔴 Kırmızı</label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label><i class="fa-solid fa-square"></i> Arka Plan Kutusu:</label>
+                        <div class="box-options">
+                            <label class="box-chip active"><input type="radio" name="editorBg" value="black" checked> ⬛ Siyah</label>
+                            <label class="box-chip"><input type="radio" name="editorBg" value="white"> ⬜ Beyaz</label>
+                            <label class="box-chip"><input type="radio" name="editorBg" value="yellow"> 🟨 Sarı</label>
+                            <label class="box-chip"><input type="radio" name="editorBg" value="none"> 🚫 Yok</label>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label><i class="fa-solid fa-up-down-left-right"></i> Yazı Konumu:</label>
+                        <div class="pos-options">
+                            <label class="pos-chip"><input type="radio" name="editorPos" value="top"> ⬆️ Üst</label>
+                            <label class="pos-chip"><input type="radio" name="editorPos" value="center"> ⏺️ Orta</label>
+                            <label class="pos-chip active"><input type="radio" name="editorPos" value="bottom" checked> ⬇️ Alt</label>
+                            <label class="pos-chip"><input type="radio" name="editorPos" value="custom"> 🖐️ Serbest (Sürükle)</label>
+                        </div>
+                    </div>
+
+                    <button id="btnProcessEdit" class="btn-primary btn-block">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Videoyu Oluştur & Kaydet
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App JS -->
     <script src="app.js"></script>
 </body>
 </html>
