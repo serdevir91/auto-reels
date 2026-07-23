@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let mimeType = 'video/webm;codecs=vp9';
                 if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
 
-                const mediaRecorder = new MediaRecorder(combinedStream, { mimeType });
+                const mediaRecorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 3000000 });
                 const chunks = [];
 
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -212,7 +212,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Text color
-                    if (opts.color === 'yellow') ctx.fillStyle = '#ffe600';
+                    if (opts.color === 'black') ctx.fillStyle = '#000000';
+                    else if (opts.color === 'yellow') ctx.fillStyle = '#ffe600';
                     else if (opts.color === 'red') ctx.fillStyle = '#ff3b30';
                     else if (opts.color === 'cyan') ctx.fillStyle = '#00f2fe';
                     else ctx.fillStyle = (opts.bgColor === 'white' || opts.bgColor === 'yellow') ? '#000000' : '#ffffff';
@@ -657,7 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
             editorOverlayText.style.bottom = '';
         }
 
-        if (color === 'yellow') editorOverlayText.style.color = '#ffe600';
+        if (color === 'black') editorOverlayText.style.color = '#000000';
+        else if (color === 'yellow') editorOverlayText.style.color = '#ffe600';
         else if (color === 'red') editorOverlayText.style.color = '#ff3b30';
         else if (color === 'cyan') editorOverlayText.style.color = '#00f2fe';
         else editorOverlayText.style.color = (bg === 'white' || bg === 'yellow') ? '#000' : '#fff';

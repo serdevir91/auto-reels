@@ -30,7 +30,7 @@ def add_text_to_video(
     y_percent: float = 50.0
 ) -> dict:
     """
-    Overlays text on video using FFmpeg drawtext with ultrafast preset and clean AAC audio.
+    Overlays text on video using FFmpeg drawtext with smooth H264 faststart & AAC audio.
     """
     if not os.path.exists(input_path):
         return {"success": False, "error": f"Input file not found: {input_path}"}
@@ -61,7 +61,7 @@ def add_text_to_video(
         box_expr = "box=1:boxcolor=red@0.85:boxborderw=12"
 
     text_color = color
-    if bg_color in ["white", "yellow"] and color == "white":
+    if color == "black":
         text_color = "black"
 
     font_param = f":fontfile='{WIN_FONT_ESCAPED}'" if os.path.exists(WIN_FONT_PATH) else ""
@@ -73,7 +73,8 @@ def add_text_to_video(
         "-vf", vf_filter,
         "-c:v", "libx264",
         "-preset", "ultrafast",
-        "-tune", "zerolatency",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
         "-c:a", "aac",
         "-b:a", "128k",
         output_path
