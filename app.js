@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 v.currentTime = 0;
-                v.playbackRate = 2.5;
+                v.playbackRate = 1.0;
                 await v.play();
                 mediaRecorder.start();
 
