@@ -1,28 +1,23 @@
 # Auto-Reels ⚡
 
-**Auto-Reels** TikTok, Instagram Reels ve YouTube Shorts videolarını filigransız indiren ve üzerlerine özelleştirilebilir yazılar eklemenizi sağlayan web uygulamasıdır.
+**[Auto-Reels](https://serdevir91.github.io/auto-reels/)** TikTok, Instagram Reels ve YouTube Shorts videolarını filigransız indiren ve üzerlerine özelleştirilebilir yazılar eklemenizi sağlayan web uygulamasıdır.
 
-Uygulama hem **GitHub Pages** üzerinde (istemci tarafı web modu) hem de bilgisayarınızda **Python + FastAPI + yt-dlp + FFmpeg** ile yüksek performanslı yerel mod olarak çalışır!
+### 🌐 Canlı Web Sitesi (GitHub Pages)
+👉 **[https://serdevir91.github.io/auto-reels/](https://serdevir91.github.io/auto-reels/)**
+
+### 📂 GitHub Repository
+👉 **[https://github.com/serdevir91/auto-reels](https://github.com/serdevir91/auto-reels)**
 
 ---
 
 ## 🚀 GitHub Pages Üzerinden Yayınlama (Canlı Web Sitesi)
 
-Uygulamayı doğrudan GitHub üzerinde canlı site olarak çalıştırmak için:
+Uygulama doğrudan GitHub Pages üzerinde yayınlanmıştır:
+👉 **[https://serdevir91.github.io/auto-reels/](https://serdevir91.github.io/auto-reels/)**
 
-1. Bu projeyi bir GitHub reposuna yükleyin:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit - Auto-Reels"
-   git branch -M main
-   git remote add origin https://github.com/KULLANICI_ADI/auto-reels.git
-   git push -u origin main
-   ```
-2. GitHub Reponuzda **Settings > Pages** sekmesine gidin.
-3. **Source** kısmını **GitHub Actions** veya `main` branch olarak seçin.
-4. Birkaç saniye içinde siteniz canlıya alınacaktır:
-   👉 `https://KULLANICI_ADI.github.io/auto-reels`
+Kendi GitHub hesabınızda yayınlamak isterseniz:
+1. GitHub Reponuzda **Settings > Pages** sekmesine gidin.
+2. **Source** kısmını **Deploy from a branch** -> `main` branch `/ (root)` olarak seçip kaydedin.
 
 ---
 
