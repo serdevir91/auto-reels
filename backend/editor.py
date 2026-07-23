@@ -6,7 +6,8 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("auto_reels_editor")
 
-WIN_FONT = "C:/Windows/Fonts/arial.ttf"
+WIN_FONT_PATH = "C:/Windows/Fonts/arial.ttf"
+WIN_FONT_ESCAPED = "C\\:/Windows/Fonts/arial.ttf"
 
 def escape_ffmpeg_text(text: str) -> str:
     """Escapes special characters for FFmpeg drawtext filter."""
@@ -63,7 +64,7 @@ def add_text_to_video(
     if bg_color in ["white", "yellow"] and color == "white":
         text_color = "black"
 
-    font_param = f":fontfile='{WIN_FONT}'" if os.path.exists("C:/Windows/Fonts/arial.ttf") else ""
+    font_param = f":fontfile='{WIN_FONT_ESCAPED}'" if os.path.exists(WIN_FONT_PATH) else ""
     vf_filter = f"drawtext=text='{clean_txt}'{font_param}:fontsize={font_size}:fontcolor={text_color}:{pos_expr}:{box_expr}"
     
     cmd = [

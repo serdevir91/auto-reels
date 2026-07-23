@@ -112,13 +112,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Helper: Client-Side Canvas Video Render with Text Overlay (Web Mode)
+    // Helper: Client-Side Canvas Video Render with Text Overlay (Web Mode & CORS Safe)
     async function createClientSideEditedVideo(videoElement, opts) {
-        return new Promise((resolve) => {
+        return new Promise(async (resolve) => {
             try {
+                let playableSrc = videoElement.src;
+                if (playableSrc.startsWith('http')) {
+                    try {
+                        const res = await fetch(playableSrc);
+                        if (res.ok) {
+                            const b = await res.blob();
+                            playableSrc = URL.createObjectURL(b);
+                        }
+                    } catch (e) {
+                        console.log('Blob convert skip:', e);
+                    }
+                }
+
+                const v = document.createElement('video');
+                v.crossOrigin = 'anonymous';
+                v.src = playableSrc;
+                v.muted = true;
+                
+                await new Promise((resPlay) => {
+                    v.onloadeddata = resPlay;
+                    v.load();
+                });
+
                 const canvas = document.createElement('canvas');
-                canvas.width = videoElement.videoWidth || 640;
-                canvas.height = videoElement.videoHeight || 360;
+                canvas.width = v.videoWidth || 640;
+                canvas.height = v.videoHeight || 360;
                 const ctx = canvas.getContext('2d');
 
                 const stream = canvas.captureStream(30);
@@ -135,16 +158,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     resolve(blobUrl);
                 };
 
-                videoElement.currentTime = 0;
-                videoElement.play();
+                v.currentTime = 0;
+                await v.play();
                 mediaRecorder.start();
 
                 const drawFrame = () => {
-                    if (videoElement.paused || videoElement.ended) {
+                    if (v.paused || v.ended) {
                         mediaRecorder.stop();
                         return;
                     }
-                    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
 
                     // Text styling
                     const fontSize = (opts.fontSize / 40) * (canvas.height * 0.05);
