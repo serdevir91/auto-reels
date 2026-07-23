@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const blobUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = filename || 'video.mp4';
+            a.download = filename || 'auto_reels_video.mp4';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -70,50 +70,55 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Blob download fallback:', err);
             const a = document.createElement('a');
             a.href = url;
-            a.download = filename || 'video.mp4';
+            a.download = filename || 'auto_reels_video.mp4';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
     };
 
-    // Helper: Native Web Share (Mobile / TikTok / Insta / Shorts)
-    window.shareMedia = async (url, filename) => {
-        const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
-        
-        if (navigator.share) {
-            try {
-                if (url.startsWith('blob:')) {
-                    const response = await fetch(url);
-                    const blob = await response.blob();
-                    const file = new File([blob], filename || 'edited_video.mp4', { type: 'video/mp4' });
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                            title: 'Auto-Reels Video',
-                            text: 'Auto-Reels ile düzenlendi! ⚡',
-                            files: [file]
-                        });
-                        return;
-                    }
-                }
-                
-                await navigator.share({
-                    title: 'Auto-Reels Video',
-                    text: 'Auto-Reels Sosyal Medya İndirici & Düzenleyici ⚡',
-                    url: fullUrl
-                });
-                return;
-            } catch (err) {
-                if (err.name === 'AbortError') return;
-                console.log('Mobile share API fallback:', err);
-            }
-        }
+    // Helper: Full Video File Share & iPhone Gallery Save Support
+    window.shareMedia = async (url, filename, event) => {
+        let btn = event ? event.currentTarget : null;
+        if (btn) btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Hazırlanıyor...';
 
         try {
-            await navigator.clipboard.writeText(fullUrl);
-            alert('📋 Video bağlantısı panoya kopyalandı! Sosyal medya uygulamanızda doğrudan paylaşabilirsiniz.');
-        } catch (e) {
-            alert(`Paylaşım Bağlantısı: ${fullUrl}`);
+            const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+            
+            // Always fetch video blob to share real MP4 file (not link)
+            const response = await fetch(fullUrl);
+            if (!response.ok) throw new Error('Video indirilemedi');
+            const blob = await response.blob();
+            
+            let safeName = filename || 'auto_reels_video.mp4';
+            if (!safeName.endsWith('.mp4') && !safeName.endsWith('.webm')) {
+                safeName += '.mp4';
+            }
+
+            const file = new File([blob], safeName, { type: blob.type || 'video/mp4' });
+
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: 'Auto-Reels Video',
+                    text: 'Auto-Reels ile düzenlendi! ⚡',
+                    files: [file]
+                });
+                return;
+            } else if (navigator.share) {
+                downloadMediaFile(url, safeName);
+                alert('📱 iPhone / İOS Kullanıcıları:\nİndirilen videoyu açıp Paylaş > "Videoyu Kaydet" seçeneğine basarak doğrudan Galeriye / Fotoğraflara kaydedebilirsiniz!');
+                return;
+            }
+
+            downloadMediaFile(url, safeName);
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.log('Share error:', err);
+                downloadMediaFile(url, filename);
+                alert('📱 iPhone İpucu:\nİndirilen videoyu "Dosyalar" uygulamasında açıp sol alttaki Paylaş butonundan "Videoyu Kaydet" seçeneğine basarak Galeriye atabilirsiniz!');
+            }
+        } finally {
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Paylaş';
         }
     };
 
@@ -302,43 +307,87 @@ document.addEventListener('DOMContentLoaded', () => {
         triggerDownload();
     });
 
-    // Client-side extraction for TikTok / Web Mode
+    // Multi-API Video Extractor for Web Mode (TikTok, Instagram Reels, YouTube Shorts)
     async function extractWebVideo(url, platform) {
+        const cleanUrl = url.trim();
+
+        // 1. TikTok Extraction
         if (platform === 'tiktok') {
-            const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`);
-            const data = await res.json();
-            if (data.code === 0 && data.data) {
-                return {
-                    success: true,
-                    title: data.data.title || 'TikTok Video',
-                    thumbnail: data.data.cover,
-                    video_url: data.data.play,
-                    uploader: data.data.author?.nickname || 'TikTok User'
-                };
+            try {
+                const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}`);
+                const data = await res.json();
+                if (data.code === 0 && data.data && data.data.play) {
+                    return {
+                        success: true,
+                        title: data.data.title || 'TikTok Video',
+                        thumbnail: data.data.cover,
+                        video_url: data.data.play,
+                        uploader: data.data.author?.nickname || 'TikTok User'
+                    };
+                }
+            } catch (e) {
+                console.log('TikWM error:', e);
             }
-        }
-        
-        try {
-            const res = await fetch('https://api.cobalt.tools/api/json', {
-                method: 'POST',
-                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, videoQuality: '1080' })
-            });
-            const data = await res.json();
-            if (data && data.url) {
-                return {
-                    success: true,
-                    title: 'Social Video',
-                    thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=150',
-                    video_url: data.url,
-                    uploader: platform.toUpperCase()
-                };
-            }
-        } catch (e) {
-            console.log('Cobalt fallback error:', e);
         }
 
-        throw new Error('Video bilgileri alınamadı. Lütfen doğrudan linki kontrol edin.');
+        // 2. Cobalt API Multi-Instance Fallback
+        const cobaltApis = [
+            'https://api.cobalt.tools/api/json',
+            'https://co.wuk.sh/api/json',
+            'https://cobalt.stream/api/json'
+        ];
+
+        for (const apiEndpoint of cobaltApis) {
+            try {
+                const res = await fetch(apiEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url: cleanUrl,
+                        videoQuality: '1080',
+                        youtubeVideoCodec: 'h264'
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && (data.url || data.picker)) {
+                        const targetUrl = data.url || (data.picker && data.picker[0] ? data.picker[0].url : null);
+                        if (targetUrl) {
+                            return {
+                                success: true,
+                                title: platform === 'instagram' ? 'Instagram Reels Video' : (platform.includes('youtube') ? 'YouTube Shorts Video' : 'Social Video'),
+                                thumbnail: 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300',
+                                video_url: targetUrl,
+                                uploader: platform.toUpperCase()
+                            };
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log(`Cobalt endpoint ${apiEndpoint} error:`, e);
+            }
+        }
+
+        // 3. Fallback for YouTube Shorts direct ID link matching
+        if (platform === 'youtube_shorts' || platform === 'youtube') {
+            const ytMatch = cleanUrl.match(/(?:shorts\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            if (ytMatch && ytMatch[1]) {
+                const videoId = ytMatch[1];
+                return {
+                    success: true,
+                    title: `YouTube Video (${videoId})`,
+                    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                    video_url: `https://www.youtube.com/watch?v=${videoId}`,
+                    uploader: 'YouTube'
+                };
+            }
+        }
+
+        throw new Error('Video bilgileri alınamadı. Lütfen linki kontrol edip tekrar deneyin.');
     }
 
     // Main Download Trigger
@@ -512,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="item-size">${f.size_mb} MB • ${f.ext.toUpperCase()}</span>
                             <div class="item-actions">
                                 ${!isAudio ? `<button class="btn-action btn-edit" onclick="openEditor('${f.media_url}', '${f.filename}')" title="Yazı Ekle / Düzenle"><i class="fa-solid fa-pen-to-square"></i> Düzenle</button>` : ''}
-                                <button class="btn-action btn-share" onclick="shareMedia('${f.media_url}', '${f.filename}')" title="Paylaş (TikTok/Insta/Shorts)"><i class="fa-solid fa-share-nodes"></i> Paylaş</button>
+                                <button class="btn-action btn-share" onclick="shareMedia('${f.media_url}', '${f.filename}', event)" title="Paylaş / Galeriye Kaydet"><i class="fa-solid fa-share-nodes"></i> Paylaş</button>
                                 <button class="btn-action btn-dl" onclick="downloadMediaFile('${f.media_url}', '${f.filename}')" title="Cihaza İndir"><i class="fa-solid fa-download"></i> İndir</button>
                                 <button class="btn-action btn-del" onclick="deleteFile('${f.filename}')" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
