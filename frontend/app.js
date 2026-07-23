@@ -51,16 +51,31 @@ document.addEventListener('DOMContentLoaded', () => {
     let customXPercent = 50.0;
     let customYPercent = 50.0;
 
-    // Helper: Direct Browser File Download Trigger
-    function downloadFile(url, filename) {
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename || 'video.mp4';
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
+    // Helper: Direct Browser File Download Trigger (Blob based - No New Tab!)
+    window.downloadMediaFile = async (url, filename) => {
+        try {
+            const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+            const response = await fetch(fullUrl);
+            if (!response.ok) throw new Error('Fetch failed');
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename || 'video.mp4';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        } catch (err) {
+            console.log('Blob download fallback:', err);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename || 'video.mp4';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    };
 
     // Helper: Native Web Share (Mobile / TikTok / Insta / Shorts)
     window.shareMedia = async (url, filename) => {
@@ -373,10 +388,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="item-footer">
                             <span class="item-size">${f.size_mb} MB • ${f.ext.toUpperCase()}</span>
                             <div class="item-actions">
-                                ${!isAudio ? `<button class="btn-icon" onclick="openEditor('${f.media_url}', '${f.filename}')" title="Yazı Ekle / Düzenle"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
-                                <button class="btn-icon" onclick="shareMedia('${f.media_url}', '${f.filename}')" title="Paylaş (TikTok/Insta/Shorts)"><i class="fa-solid fa-share-nodes"></i></button>
-                                <button class="btn-icon" onclick="downloadFile('${f.media_url}', '${f.filename}')" title="Cihaza İndir"><i class="fa-solid fa-download"></i></button>
-                                <button class="btn-icon btn-delete" onclick="deleteFile('${f.filename}')" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
+                                ${!isAudio ? `<button class="btn-action btn-edit" onclick="openEditor('${f.media_url}', '${f.filename}')" title="Yazı Ekle / Düzenle"><i class="fa-solid fa-pen-to-square"></i> Düzenle</button>` : ''}
+                                <button class="btn-action btn-share" onclick="shareMedia('${f.media_url}', '${f.filename}')" title="Paylaş (TikTok/Insta/Shorts)"><i class="fa-solid fa-share-nodes"></i> Paylaş</button>
+                                <button class="btn-action btn-dl" onclick="downloadMediaFile('${f.media_url}', '${f.filename}')" title="Cihaza İndir"><i class="fa-solid fa-download"></i> İndir</button>
+                                <button class="btn-action btn-del" onclick="deleteFile('${f.filename}')" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </div>
                     </div>
@@ -448,7 +463,6 @@ document.addEventListener('DOMContentLoaded', () => {
         customXPercent = Math.max(5, Math.min(95, (x / rect.width) * 100));
         customYPercent = Math.max(5, Math.min(95, (y / rect.height) * 100));
 
-        // Auto select 'Serbest (custom)' radio
         const customRadio = document.querySelector('input[name="editorPos"][value="custom"]');
         if (customRadio) {
             customRadio.checked = true;
