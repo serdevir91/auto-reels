@@ -291,9 +291,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 loadGallery();
             }
 
-            // Direct File Download Trigger!
-            downloadFile(finalMediaUrl, finalFilename);
-
             urlInput.value = '';
             btnClear.style.display = 'none';
             updatePlatformBadge('generic');
@@ -451,7 +448,6 @@ document.addEventListener('DOMContentLoaded', () => {
         customXPercent = Math.max(5, Math.min(95, (x / rect.width) * 100));
         customYPercent = Math.max(5, Math.min(95, (y / rect.height) * 100));
 
-        // Auto select 'Serbest (custom)' radio
         const customRadio = document.querySelector('input[name="editorPos"][value="custom"]');
         if (customRadio) {
             customRadio.checked = true;
@@ -590,23 +586,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 saveWebGalleryItem(newItem);
             }
 
-            // 1. Alert success
-            alert('Video üzerine yazı başarıyla eklendi! İndirme başlatılıyor... 🎉');
-            
-            // 2. Direct browser download for edited video!
-            downloadFile(editedUrl, editedFilename);
+            alert('Video üzerine yazı başarıyla eklendi ve galerinize kaydedildi! 🎉');
 
-            // 3. Close modal & refresh gallery
             editorModal.style.display = 'none';
             editorVideoPreview.pause();
             loadGallery();
-
-            // 4. Offer instant Web Share for Mobile!
-            if (navigator.share) {
-                setTimeout(() => {
-                    shareMedia(editedUrl, editedFilename);
-                }, 500);
-            }
         } catch (err) {
             alert(`Düzenleme başarısız: ${err.message}`);
         } finally {
