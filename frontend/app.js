@@ -112,6 +112,89 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // Helper: Client-Side Canvas Video Render with Text Overlay (Web Mode)
+    async function createClientSideEditedVideo(videoElement, opts) {
+        return new Promise((resolve) => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = videoElement.videoWidth || 640;
+                canvas.height = videoElement.videoHeight || 360;
+                const ctx = canvas.getContext('2d');
+
+                const stream = canvas.captureStream(30);
+                let mimeType = 'video/webm;codecs=vp9';
+                if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
+
+                const mediaRecorder = new MediaRecorder(stream, { mimeType });
+                const chunks = [];
+
+                mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: mimeType });
+                    const blobUrl = URL.createObjectURL(blob);
+                    resolve(blobUrl);
+                };
+
+                videoElement.currentTime = 0;
+                videoElement.play();
+                mediaRecorder.start();
+
+                const drawFrame = () => {
+                    if (videoElement.paused || videoElement.ended) {
+                        mediaRecorder.stop();
+                        return;
+                    }
+                    ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+                    // Text styling
+                    const fontSize = (opts.fontSize / 40) * (canvas.height * 0.05);
+                    ctx.font = `bold ${fontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+
+                    let x = canvas.width / 2;
+                    let y = canvas.height * 0.82;
+                    if (opts.position === 'top') y = canvas.height * 0.12;
+                    else if (opts.position === 'center') y = canvas.height * 0.5;
+                    else if (opts.position === 'custom') {
+                        x = (canvas.width * opts.xPercent) / 100;
+                        y = (canvas.height * opts.yPercent) / 100;
+                    }
+
+                    const metrics = ctx.measureText(opts.text);
+                    const padX = fontSize * 0.4;
+                    const padY = fontSize * 0.3;
+
+                    // Box Background
+                    if (opts.bgColor === 'black') {
+                        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                        ctx.fillRect(x - metrics.width/2 - padX, y - fontSize/2 - padY, metrics.width + padX*2, fontSize + padY*2);
+                    } else if (opts.bgColor === 'white') {
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                        ctx.fillRect(x - metrics.width/2 - padX, y - fontSize/2 - padY, metrics.width + padX*2, fontSize + padY*2);
+                    } else if (opts.bgColor === 'yellow') {
+                        ctx.fillStyle = 'rgba(255, 230, 0, 0.95)';
+                        ctx.fillRect(x - metrics.width/2 - padX, y - fontSize/2 - padY, metrics.width + padX*2, fontSize + padY*2);
+                    }
+
+                    // Text color
+                    if (opts.color === 'yellow') ctx.fillStyle = '#ffe600';
+                    else if (opts.color === 'red') ctx.fillStyle = '#ff3b30';
+                    else if (opts.color === 'cyan') ctx.fillStyle = '#00f2fe';
+                    else ctx.fillStyle = (opts.bgColor === 'white' || opts.bgColor === 'yellow') ? '#000000' : '#ffffff';
+
+                    ctx.fillText(opts.text, x, y);
+                    requestAnimationFrame(drawFrame);
+                };
+
+                drawFrame();
+            } catch (err) {
+                console.error('Client side canvas video edit error:', err);
+                resolve(videoElement.src);
+            }
+        });
+    }
+
     // Helper: Detect Platform
     function detectPlatform(url) {
         const u = url.toLowerCase();
@@ -580,7 +663,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const position = document.querySelector('input[name="editorPos"]:checked')?.value || 'bottom';
 
         btnProcessEdit.disabled = true;
-        btnProcessEdit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Video İşleniyor (FFmpeg)...';
+        btnProcessEdit.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Video İşleniyor...';
 
         try {
             let editedUrl = '';
@@ -610,12 +693,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(data.detail || 'Video düzenleme hatası');
                 }
             } else {
-                editedUrl = editorVideoPreview.src;
+                editedUrl = await createClientSideEditedVideo(editorVideoPreview, {
+                    text,
+                    fontSize,
+                    color,
+                    bgColor: bg_color,
+                    position,
+                    xPercent: customXPercent,
+                    yPercent: customYPercent
+                });
+
                 const newItem = {
                     filename: editedFilename,
                     media_url: editedUrl,
                     size_mb: 'HD',
-                    ext: 'mp4',
+                    ext: 'webm',
                     platform: 'edited',
                     created_at: Date.now() / 1000
                 };
