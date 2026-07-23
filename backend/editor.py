@@ -30,7 +30,7 @@ def add_text_to_video(
     y_percent: float = 50.0
 ) -> dict:
     """
-    Overlays text on video using FFmpeg drawtext.
+    Overlays text on video using FFmpeg drawtext with ultrafast preset and clean AAC audio.
     """
     if not os.path.exists(input_path):
         return {"success": False, "error": f"Input file not found: {input_path}"}
@@ -71,7 +71,11 @@ def add_text_to_video(
         "ffmpeg", "-y",
         "-i", input_path,
         "-vf", vf_filter,
-        "-c:a", "copy",
+        "-c:v", "libx264",
+        "-preset", "ultrafast",
+        "-tune", "zerolatency",
+        "-c:a", "aac",
+        "-b:a", "128k",
         output_path
     ]
     

@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Helper: Client-Side Canvas Video Render with Text Overlay (Web Mode & CORS Safe)
+    // Helper: Client-Side Canvas Video Render with Text Overlay & Full Audio & Fast Speed
     async function createClientSideEditedVideo(videoElement, opts) {
         return new Promise(async (resolve) => {
             try {
@@ -132,7 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const v = document.createElement('video');
                 v.crossOrigin = 'anonymous';
                 v.src = playableSrc;
-                v.muted = true;
+                v.muted = false;
+                v.volume = 0.01;
                 
                 await new Promise((resPlay) => {
                     v.onloadeddata = resPlay;
@@ -144,11 +145,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.height = v.videoHeight || 360;
                 const ctx = canvas.getContext('2d');
 
-                const stream = canvas.captureStream(30);
+                const canvasStream = canvas.captureStream(30);
+                
+                const videoStream = v.captureStream ? v.captureStream() : (v.mozCaptureStream ? v.mozCaptureStream() : null);
+                const tracks = [...canvasStream.getVideoTracks()];
+                if (videoStream && videoStream.getAudioTracks().length > 0) {
+                    tracks.push(videoStream.getAudioTracks()[0]);
+                }
+
+                const combinedStream = new MediaStream(tracks);
+
                 let mimeType = 'video/webm;codecs=vp9';
                 if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = 'video/webm';
 
-                const mediaRecorder = new MediaRecorder(stream, { mimeType });
+                const mediaRecorder = new MediaRecorder(combinedStream, { mimeType });
                 const chunks = [];
 
                 mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -159,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 v.currentTime = 0;
+                v.playbackRate = 2.5;
                 await v.play();
                 mediaRecorder.start();
 
