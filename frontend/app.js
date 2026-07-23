@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Drag & Drop Positioning State for Editor
     let isDraggingText = false;
     let customXPercent = 50.0;
-    let customYPercent = 85.0;
+    let customYPercent = 50.0;
 
     // Helper: Direct Browser File Download Trigger
     function downloadFile(url, filename) {
@@ -375,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="item-actions">
                                 ${!isAudio ? `<button class="btn-icon" onclick="openEditor('${f.media_url}', '${f.filename}')" title="Yazı Ekle / Düzenle"><i class="fa-solid fa-pen-to-square"></i></button>` : ''}
                                 <button class="btn-icon" onclick="shareMedia('${f.media_url}', '${f.filename}')" title="Paylaş (TikTok/Insta/Shorts)"><i class="fa-solid fa-share-nodes"></i></button>
-                                <a href="${f.media_url}" target="_blank" download="${f.filename}" class="btn-icon" title="Cihaza İndir"><i class="fa-solid fa-download"></i></a>
+                                <button class="btn-icon" onclick="downloadFile('${f.media_url}', '${f.filename}')" title="Cihaza İndir"><i class="fa-solid fa-download"></i></button>
                                 <button class="btn-icon btn-delete" onclick="deleteFile('${f.filename}')" title="Sil"><i class="fa-solid fa-trash-can"></i></button>
                             </div>
                         </div>
@@ -428,7 +428,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editorVideoPreview.src = url;
         editorVideoPreview.play();
         customXPercent = 50.0;
-        customYPercent = 85.0;
+        customYPercent = 50.0;
         syncEditorPreview();
         editorModal.style.display = 'flex';
     };
@@ -448,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         customXPercent = Math.max(5, Math.min(95, (x / rect.width) * 100));
         customYPercent = Math.max(5, Math.min(95, (y / rect.height) * 100));
 
+        // Auto select 'Serbest (custom)' radio
         const customRadio = document.querySelector('input[name="editorPos"][value="custom"]');
         if (customRadio) {
             customRadio.checked = true;
@@ -458,35 +459,47 @@ document.addEventListener('DOMContentLoaded', () => {
         syncEditorPreview();
     }
 
-    editorOverlayText.addEventListener('mousedown', (e) => {
+    function startDrag(e) {
         isDraggingText = true;
-        e.preventDefault();
-    });
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        handleDragMove(clientX, clientY);
+    }
 
-    document.addEventListener('mousemove', (e) => {
-        if (isDraggingText) {
-            handleDragMove(e.clientX, e.clientY);
-        }
-    });
+    if (editorOverlayText && editorPreviewContainer) {
+        editorOverlayText.addEventListener('mousedown', (e) => {
+            e.stopPropagation();
+            startDrag(e);
+        });
+        editorOverlayText.addEventListener('touchstart', (e) => {
+            e.stopPropagation();
+            startDrag(e);
+        }, { passive: true });
 
-    document.addEventListener('mouseup', () => {
-        isDraggingText = false;
-    });
+        editorPreviewContainer.addEventListener('mousedown', (e) => {
+            if (e.target !== editorVideoPreview && e.target !== editorPreviewContainer && e.target !== editorOverlayText) return;
+            startDrag(e);
+        });
 
-    // Touch support for Mobile
-    editorOverlayText.addEventListener('touchstart', (e) => {
-        isDraggingText = true;
-    });
+        editorPreviewContainer.addEventListener('touchstart', (e) => {
+            startDrag(e);
+        }, { passive: true });
 
-    document.addEventListener('touchmove', (e) => {
-        if (isDraggingText && e.touches.length > 0) {
-            handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
-        }
-    });
+        document.addEventListener('mousemove', (e) => {
+            if (isDraggingText) {
+                handleDragMove(e.clientX, e.clientY);
+            }
+        });
 
-    document.addEventListener('touchend', () => {
-        isDraggingText = false;
-    });
+        document.addEventListener('touchmove', (e) => {
+            if (isDraggingText && e.touches.length > 0) {
+                handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        document.addEventListener('mouseup', () => { isDraggingText = false; });
+        document.addEventListener('touchend', () => { isDraggingText = false; });
+    }
 
     // Sync live preview
     function syncEditorPreview() {
@@ -500,6 +513,8 @@ document.addEventListener('DOMContentLoaded', () => {
         editorOverlayText.style.fontSize = `${fontSize * 0.4}px`;
         editorSizeValue.textContent = `${fontSize}px`;
 
+        editorOverlayText.style.bottom = 'auto';
+
         if (pos === 'custom') {
             editorOverlayText.className = `overlay-text pos-custom bg-${bg}`;
             editorOverlayText.style.left = `${customXPercent}%`;
@@ -508,6 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
             editorOverlayText.className = `overlay-text pos-${pos} bg-${bg}`;
             editorOverlayText.style.left = '';
             editorOverlayText.style.top = '';
+            editorOverlayText.style.bottom = '';
         }
 
         if (color === 'yellow') editorOverlayText.style.color = '#ffe600';
@@ -521,6 +537,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('input[name="editorColor"], input[name="editorBg"], input[name="editorPos"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
+            if (e.target.value === 'custom') {
+                if (customXPercent === 50 && customYPercent === 50) {
+                    customXPercent = 50;
+                    customYPercent = 50;
+                }
+            }
             const parent = e.target.closest('.color-options, .box-options, .pos-options');
             if (parent) {
                 parent.querySelectorAll('label').forEach(l => l.classList.remove('active'));
