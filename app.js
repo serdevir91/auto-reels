@@ -80,35 +80,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Helper: Native Web Share (Mobile / TikTok / Insta / Shorts)
     window.shareMedia = async (url, filename) => {
         const fullUrl = url.startsWith('http') ? url : window.location.origin + url;
+        
         if (navigator.share) {
             try {
-                const response = await fetch(fullUrl);
-                const blob = await response.blob();
-                const file = new File([blob], filename || 'video.mp4', { type: blob.type || 'video/mp4' });
-                
-                if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title: 'Auto-Reels Video',
-                        text: 'Auto-Reels ile düzenlendi! ⚡',
-                        files: [file]
-                    });
-                    return;
+                if (url.startsWith('blob:')) {
+                    const response = await fetch(url);
+                    const blob = await response.blob();
+                    const file = new File([blob], filename || 'edited_video.mp4', { type: 'video/mp4' });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            title: 'Auto-Reels Video',
+                            text: 'Auto-Reels ile düzenlendi! ⚡',
+                            files: [file]
+                        });
+                        return;
+                    }
                 }
-            } catch (err) {
-                console.log('File share fallback:', err);
-            }
-            try {
+                
                 await navigator.share({
                     title: 'Auto-Reels Video',
-                    text: 'Auto-Reels ile indirildi! ⚡',
+                    text: 'Auto-Reels Sosyal Medya İndirici & Düzenleyici ⚡',
                     url: fullUrl
                 });
+                return;
             } catch (err) {
-                console.log('Share canceled or error:', err);
+                if (err.name === 'AbortError') return;
+                console.log('Mobile share API fallback:', err);
             }
-        } else {
+        }
+
+        try {
             await navigator.clipboard.writeText(fullUrl);
-            alert('Video bağlantısı panoya kopyalandı! Sosyal medyanızda paylaşabilirsiniz.');
+            alert('📋 Video bağlantısı panoya kopyalandı! Sosyal medya uygulamanızda doğrudan paylaşabilirsiniz.');
+        } catch (e) {
+            alert(`Paylaşım Bağlantısı: ${fullUrl}`);
         }
     };
 
