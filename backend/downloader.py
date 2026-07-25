@@ -2,6 +2,7 @@ import os
 import re
 import time
 import logging
+import urllib.parse
 from pathlib import Path
 from typing import Optional, Dict, Any
 import requests
@@ -22,6 +23,15 @@ def get_cookie_file() -> Optional[str]:
     if COOKIES_FILE_2.exists():
         return str(COOKIES_FILE_2)
     return None
+
+def clean_url_string(u: str) -> str:
+    """Unescapes slashes, unicode escapes, and percent-encoding in extracted video URLs."""
+    if not u:
+        return ""
+    u = u.replace('\\/', '/').replace('\\\\', '')
+    u = re.sub(r'\\u([0-9a-fA-F]{4})', lambda m: chr(int(m.group(1), 16)), u)
+    u = urllib.parse.unquote(u)
+    return u.strip()
 
 def normalize_url(url: str) -> str:
     """Normalizes and cleans social media video URLs."""
@@ -44,7 +54,6 @@ def normalize_url(url: str) -> str:
     # Remove tracking query parameters if present
     if "?" in url:
         base, query = url.split("?", 1)
-        # Keep basic params if needed, but strip tracking params like igsh, si, utm
         if "instagram.com" in url or "youtube.com" in url or "tiktok.com" in url:
             url = base
             
@@ -91,10 +100,11 @@ def extract_instagram_embed_fallback(url: str) -> Optional[Dict[str, Any]]:
         if r.status_code != 200:
             return None
             
-        text_clean = r.text.replace('\\/', '/').replace('\\u0026', '&').replace('\\"', '"')
+        text_raw = r.text
+        text_clean = text_raw.replace('\\/', '/').replace('\\u0026', '&').replace('\\"', '"')
         
-        video_url_match = re.search(r'"video_url"\s*:\s*"([^"]+)"', text_clean)
-        display_url_match = re.search(r'"display_url"\s*:\s*"([^"]+)"', text_clean)
+        video_url_match = re.search(r'"video_url"\s*:\s*"([^"]+)"', text_raw) or re.search(r'"video_url"\s*:\s*"([^"]+)"', text_clean)
+        display_url_match = re.search(r'"display_url"\s*:\s*"([^"]+)"', text_raw) or re.search(r'"display_url"\s*:\s*"([^"]+)"', text_clean)
         caption_match = re.search(r'<div class="CaptionText">([\s\S]*?)</div>', r.text) or re.search(r'"caption"\s*:\s*"([^"]+)"', text_clean)
         username_match = re.search(r'"username"\s*:\s*"([^"]+)"', text_clean) or re.search(r'<a class="UsernameText"[^>]*>([^<]+)</a>', r.text)
 
@@ -102,15 +112,16 @@ def extract_instagram_embed_fallback(url: str) -> Optional[Dict[str, Any]]:
         
         # Fallback to direct mp4 regex search
         if not video_url:
-            mp4_matches = re.findall(r'https://[^\s"<>\'\\]+?\.mp4[^\s"<>\'\\]*', text_clean)
+            mp4_matches = re.findall(r'https://[^\s"<>\'\\]+?\.mp4[^\s"<>\'\\]*', text_clean) or re.findall(r'https:\\[^\s"<>\'\\]+?\.mp4[^\s"<>\'\\]*', text_raw)
             if mp4_matches:
                 video_url = mp4_matches[0]
 
         if video_url:
+            video_url = clean_url_string(video_url)
+            thumbnail = clean_url_string(display_url_match.group(1)) if display_url_match else ""
             title = caption_match.group(1).strip() if caption_match else "Instagram Reel"
             title = re.sub(r'<[^>]+>', '', title) # strip HTML tags
             uploader = username_match.group(1) if username_match else "Instagram User"
-            thumbnail = display_url_match.group(1) if display_url_match else ""
             
             return {
                 "success": True,
@@ -330,7 +341,7 @@ def download_video(url: str, format_type: str = "mp4", output_dir: str = "downlo
         fallback_info = extract_instagram_embed_fallback(normalized_url)
         if fallback_info and fallback_info.get("direct_video_url"):
             try:
-                direct_url = fallback_info["direct_video_url"]
+                direct_url = clean_url_string(fallback_info["direct_video_url"])
                 code = fallback_info.get("shortcode") or "reel"
                 ext = "mp3" if format_type == "mp3" else "mp4"
                 filename = f"instagram_{code}.{ext}"
@@ -340,7 +351,8 @@ def download_video(url: str, format_type: str = "mp4", output_dir: str = "downlo
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
                 }
                 
-                res = requests.get(direct_url, headers=headers, stream=True, timeout=20)
+                logger.info(f"Downloading direct Instagram embed URL: {direct_url[:80]}...")
+                res = requests.get(direct_url, headers=headers, stream=True, timeout=25)
                 if res.status_code == 200:
                     total_len = int(res.headers.get('content-length', 0))
                     dl_len = 0
@@ -378,6 +390,8 @@ def download_video(url: str, format_type: str = "mp4", output_dir: str = "downlo
                         "download_time": time.time(),
                         "url": normalized_url,
                     }
+                else:
+                    logger.warning(f"Direct Instagram embed download HTTP status: {res.status_code}")
             except Exception as e:
                 logger.error(f"Instagram embed direct download error: {e}")
 
