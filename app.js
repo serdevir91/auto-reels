@@ -330,7 +330,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Cobalt API Multi-Instance Fallback
+        // 2. Instagram Embed Fallback for Web Mode
+        if (platform === 'instagram') {
+            try {
+                const igMatch = cleanUrl.match(/(?:reel|reels|p|tv|share\/reel)\/([A-Za-z0-9_-]+)/);
+                if (igMatch && igMatch[1]) {
+                    const shortcode = igMatch[1];
+                    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
+                    const res = await fetch(embedUrl);
+                    if (res.ok) {
+                        const html = await res.text();
+                        const cleanHtml = html.replace(/\\\//g, '/').replace(/\\u0026/g, '&');
+                        const vMatch = cleanHtml.match(/"video_url"\s*:\s*"([^"]+)"/) || cleanHtml.match(/src="(https:\/\/[^"]+?\.mp4[^"]*)"/);
+                        const tMatch = cleanHtml.match(/"display_url"\s*:\s*"([^"]+)"/);
+                        if (vMatch && vMatch[1]) {
+                            return {
+                                success: true,
+                                title: 'Instagram Reel',
+                                thumbnail: tMatch ? tMatch[1] : '',
+                                video_url: vMatch[1],
+                                uploader: 'Instagram'
+                            };
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('Instagram embed fetch error:', e);
+            }
+        }
+
+        // 3. Cobalt API Multi-Instance Fallback
         const cobaltApis = [
             'https://api.cobalt.tools/api/json',
             'https://co.wuk.sh/api/json',
@@ -372,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Fallback for YouTube Shorts direct ID link matching
+        // 4. Fallback for YouTube Shorts direct ID link matching
         if (platform === 'youtube_shorts' || platform === 'youtube') {
             const ytMatch = cleanUrl.match(/(?:shorts\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
             if (ytMatch && ytMatch[1]) {
@@ -442,7 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const dlData = await dlRes.json();
 
-                if (dlData.success) {
+                if (dlRes.ok && dlData.success) {
                     progressFill.style.width = '100%';
                     progressPercent.textContent = '100%';
                     statusText.innerHTML = '<i class="fa-solid fa-check"></i> İndirme Tamamlandı!';
@@ -450,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     finalFilename = dlData.filename;
                     loadGallery();
                 } else {
-                    throw new Error(dlData.detail || 'İndirme hatası oluştu.');
+                    throw new Error(dlData.detail || dlData.error || 'İndirme hatası oluştu.');
                 }
             } else {
                 const webInfo = await extractWebVideo(url, platform);
