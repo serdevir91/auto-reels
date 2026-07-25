@@ -141,6 +141,15 @@ def extract_instagram_embed_fallback(url: str) -> Optional[Dict[str, Any]]:
         
     return None
 
+class SilentYtdlLogger:
+    """Suppresses noisy internal yt-dlp error logs during fallbacks."""
+    def debug(self, msg):
+        pass
+    def warning(self, msg):
+        pass
+    def error(self, msg):
+        pass
+
 def get_base_ydl_opts(platform: str) -> dict:
     """Returns optimized options for yt-dlp based on platform."""
     cookie_path = get_cookie_file()
@@ -148,6 +157,7 @@ def get_base_ydl_opts(platform: str) -> dict:
     opts = {
         'quiet': True,
         'no_warnings': True,
+        'logger': SilentYtdlLogger(),
         'extract_flat': False,
         'noplaylist': True,
         'http_headers': {
@@ -198,7 +208,7 @@ def get_video_info(url: str) -> dict:
                 "like_count": info.get("like_count") or 0,
             }
         except Exception as e:
-            logger.warning(f"yt-dlp info failed for {normalized_url}: {e}")
+            logger.debug(f"Primary yt-dlp info extraction skipped for {normalized_url}, proceeding to fallback...")
 
     # 2. Try Instagram Embed Fallback if Instagram
     if platform == "instagram":
@@ -333,7 +343,7 @@ def download_video(url: str, format_type: str = "mp4", output_dir: str = "downlo
                 "url": normalized_url,
             }
         except Exception as e:
-            logger.warning(f"Primary yt-dlp download failed for {normalized_url}: {e}")
+            logger.debug(f"Primary yt-dlp download skipped for {normalized_url}, trying embed fallback...")
 
     # 2. Instagram Direct Embed Downloader Fallback
     if platform == "instagram":
