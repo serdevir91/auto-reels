@@ -5,9 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (envBadge) {
         if (isLocalhost) {
-            envBadge.innerHTML = '<i class="fa-solid fa-server"></i> Local App (Python Backend)';
+            envBadge.innerHTML = '<i class="fa-solid fa-server"></i> Local App (Python Backend Aktif ⚡)';
         } else {
-            envBadge.innerHTML = '<i class="fa-solid fa-cloud"></i> GitHub Pages Mode';
+            envBadge.innerHTML = '<i class="fa-solid fa-cloud"></i> GitHub Pages Modu (Web İstemci)';
         }
     }
 
