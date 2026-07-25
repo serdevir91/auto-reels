@@ -345,8 +345,57 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Instagram Embed Extraction via Public CORS Proxies
+        // 3. Instagram Reels Extraction (SnapSave API - Client-Side Web Mode)
         if (platform === 'instagram') {
+            try {
+                const formData = new URLSearchParams();
+                formData.append('url', cleanUrl);
+
+                const res = await fetch('https://snapsave.app/action.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Referer': 'https://snapsave.app/',
+                        'Origin': 'https://snapsave.app'
+                    },
+                    body: formData.toString()
+                });
+
+                if (res.ok) {
+                    const jsData = await res.text();
+                    const codeToExec = jsData.replace(/eval\s*\(/, 'injectedHtml = (');
+                    const evalFunc = new Function('document', 'window', `
+                        let injectedHtml = "";
+                        try {
+                            ${codeToExec};
+                        } catch(e) {}
+                        return injectedHtml;
+                    `);
+                    
+                    const rawHtml = evalFunc({}, {});
+                    const cleanHtml = rawHtml.replace(/\\"/g, '"').replace(/\\\//g, '/');
+
+                    const linkMatch = cleanHtml.match(/href="([^"]+)"[^>]*>[\s\S]*?Download video/i) || 
+                                      cleanHtml.match(/href="([^"]+)"[^>]*title="Download/i) ||
+                                      cleanHtml.match(/href="(https:\/\/[^"]+)"/);
+                                      
+                    const thumbMatch = cleanHtml.match(/src="([^"]+)"/);
+
+                    if (linkMatch && linkMatch[1]) {
+                        return {
+                            success: true,
+                            title: 'Instagram Reel Video',
+                            thumbnail: thumbMatch ? thumbMatch[1].replace(/&amp;/g, '&') : 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=300',
+                            video_url: linkMatch[1].replace(/&amp;/g, '&'),
+                            uploader: 'Instagram'
+                        };
+                    }
+                }
+            } catch (e) {
+                console.log('SnapSave API error:', e);
+            }
+
+            // Secondary Fallback via Public CORS Proxies
             try {
                 const igMatch = cleanUrl.match(/(?:reel|reels|p|tv|share\/reel)\/([A-Za-z0-9_-]+)/);
                 if (igMatch && igMatch[1]) {
