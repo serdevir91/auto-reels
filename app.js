@@ -311,7 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function extractWebVideo(url, platform) {
         const cleanUrl = url.trim();
 
-        // 1. TikTok Extraction
+        // 1. TikTok Extraction (TikWM API)
         if (platform === 'tiktok') {
             try {
                 const res = await fetch(`https://www.tikwm.com/api/?url=${encodeURIComponent(cleanUrl)}`);
@@ -330,27 +330,55 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. Instagram Embed Fallback for Web Mode
+        // 2. YouTube Shorts Priority Resolution (Instant Web Resolution)
+        if (platform === 'youtube_shorts' || platform === 'youtube') {
+            const ytMatch = cleanUrl.match(/(?:shorts\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            if (ytMatch && ytMatch[1]) {
+                const videoId = ytMatch[1];
+                return {
+                    success: true,
+                    title: `YouTube Shorts Video (${videoId})`,
+                    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
+                    video_url: `https://www.youtube.com/watch?v=${videoId}`,
+                    uploader: 'YouTube'
+                };
+            }
+        }
+
+        // 3. Instagram Embed Extraction via Public CORS Proxies
         if (platform === 'instagram') {
             try {
                 const igMatch = cleanUrl.match(/(?:reel|reels|p|tv|share\/reel)\/([A-Za-z0-9_-]+)/);
                 if (igMatch && igMatch[1]) {
                     const shortcode = igMatch[1];
-                    const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
-                    const res = await fetch(embedUrl);
-                    if (res.ok) {
-                        const html = await res.text();
-                        const cleanHtml = html.replace(/\\\//g, '/').replace(/\\u0026/g, '&');
-                        const vMatch = cleanHtml.match(/"video_url"\s*:\s*"([^"]+)"/) || cleanHtml.match(/src="(https:\/\/[^"]+?\.mp4[^"]*)"/);
-                        const tMatch = cleanHtml.match(/"display_url"\s*:\s*"([^"]+)"/);
-                        if (vMatch && vMatch[1]) {
-                            return {
-                                success: true,
-                                title: 'Instagram Reel',
-                                thumbnail: tMatch ? tMatch[1] : '',
-                                video_url: vMatch[1],
-                                uploader: 'Instagram'
-                            };
+                    const rawEmbedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
+                    
+                    const corsProxies = [
+                        `https://api.allorigins.win/raw?url=${encodeURIComponent(rawEmbedUrl)}`,
+                        `https://corsproxy.io/?${encodeURIComponent(rawEmbedUrl)}`,
+                        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(rawEmbedUrl)}`
+                    ];
+                    
+                    for (const proxyUrl of corsProxies) {
+                        try {
+                            const res = await fetch(proxyUrl);
+                            if (res.ok) {
+                                const html = await res.text();
+                                const cleanHtml = html.replace(/\\\//g, '/').replace(/\\u0026/g, '&');
+                                const vMatch = cleanHtml.match(/"video_url"\s*:\s*"([^"]+)"/) || cleanHtml.match(/src="(https:\/\/[^"]+?\.mp4[^"]*)"/);
+                                const tMatch = cleanHtml.match(/"display_url"\s*:\s*"([^"]+)"/);
+                                if (vMatch && vMatch[1]) {
+                                    return {
+                                        success: true,
+                                        title: 'Instagram Reel Video',
+                                        thumbnail: tMatch ? tMatch[1] : '',
+                                        video_url: vMatch[1],
+                                        uploader: 'Instagram'
+                                    };
+                                }
+                            }
+                        } catch (proxyErr) {
+                            console.log(`Proxy ${proxyUrl} failed:`, proxyErr);
                         }
                     }
                 }
@@ -359,7 +387,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 3. Cobalt API Multi-Instance Fallback
+        // 4. Cobalt API Multi-Instance Fallback
         const cobaltApis = [
             'https://api.cobalt.tools/api/json',
             'https://co.wuk.sh/api/json',
@@ -401,22 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 4. Fallback for YouTube Shorts direct ID link matching
-        if (platform === 'youtube_shorts' || platform === 'youtube') {
-            const ytMatch = cleanUrl.match(/(?:shorts\/|v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-            if (ytMatch && ytMatch[1]) {
-                const videoId = ytMatch[1];
-                return {
-                    success: true,
-                    title: `YouTube Video (${videoId})`,
-                    thumbnail: `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`,
-                    video_url: `https://www.youtube.com/watch?v=${videoId}`,
-                    uploader: 'YouTube'
-                };
-            }
-        }
-
-        throw new Error('Video bilgileri alınamadı. Lütfen linki kontrol edip tekrar deneyin.');
+        throw new Error('Video bilgileri alınamadı. Lütfen linki kontrol edip tekrar deneyin veya uygulamayı bilgisayarınızda (run.py / start.bat) çalıştırın.');
     }
 
     // Main Download Trigger
